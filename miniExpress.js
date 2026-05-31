@@ -1,4 +1,7 @@
 function miniExpress() {
+    const middlewares = [];
+    const routes = [];
+
     return {};
 }
 
