@@ -1,5 +1,6 @@
 function miniExpress() {
     const middlewares = [];
+    const errorMiddlewares = [];
     const routes = [];
 
     async function app(req, res) {
@@ -9,10 +10,10 @@ function miniExpress() {
         };
 
         res.json = function (data) {
-            res.setHeader{
+            res.setHeader(
                 "Content-Type",
                 "application/json"
-            };
+            );
 
             res.end(JSON.stringify(data));
         };
@@ -44,36 +45,81 @@ function miniExpress() {
             req.body = {};
         }
 
-        let index = 0;
+        let middlewareIndex = 0;
+        let errorIndex = 0;
 
-        function next() {
-            if (index < middlewares.length) {
-                const middleware = middlewares[index];
-                index++;
+        function next(err) {
 
-                middleware(req, res, next);
+            if (err) {
+                return runErrorMiddleware(err);
             }
-            else {
+
+            if (middlewareIndex < middlewares.length) {
+                const middleware = middlewares[middlewareIndex++];
+
+                try {
+                    middleware(req, res, next);
+                }
+                catch (err) {
+                    next(err);
+                }
+
+                return;
+            }
+
+            handleRoute();
+        }
+
+        function runErrorMiddleware(err) {
+            if (errorIndex < errorMiddlewares.length) {
+                const middleware = errorMiddlewares[errorIndex++];
+
+                try {
+                    middleware(err, req, res, next);
+                }
+                catch (newErr) {
+                    runErrorMiddleware(newErr);
+                }
+
+                return;
+            }
+
+            res.statusCode = 500;
+            res.json({
+                error: err.message
+            });
+        }
+
+        function handleRoute() {
                 const route = routes.find((r) => {
                     return r.method === req.method && r.path === url.pathname;
                 });
 
-                if (route) {
-                    route.handler(req, res);
-                }
-                else {
+                if (!route) {
                     res.statusCode = 404;
                     res.end("Not Found");
+                    return;
+                }
+
+                try {
+                    route.handler(req, res);
+                }
+                catch (err) {
+                    next(err);
                 }
             }
-        }
 
         next();
     }
 
     app.use = function (fn) {
-        middlewares.push(fn);
-    }
+        if (fn.length === 4) {
+            errorMiddlewares.push(fn);
+        }
+        else {
+            middlewares.push(fn)
+        }
+    };
 
     app.get = function (path, handler) {
         routes.push({
