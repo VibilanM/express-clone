@@ -4,6 +4,19 @@ function miniExpress() {
 
     async function app(req, res) {
 
+        res.send = function (data) {
+            res.end(data);
+        };
+
+        res.json = function (data) {
+            res.setHeader{
+                "Content-Type",
+                "application/json"
+            };
+
+            res.end(JSON.stringify(data));
+        };
+
         const url = new URL(req.url, "http://localhost");
 
         req.query = {};
