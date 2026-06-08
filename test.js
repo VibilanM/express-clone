@@ -4,6 +4,21 @@ const miniExpress = require("./miniExpress.js");
 
 const app = miniExpress();
 
+app.use((req, res, next) => {
+    console.log("Middleware 1");
+    next();
+});
+
+app.use((req, res, next) => {
+    console.log("Middleware 2");
+    next();
+});
+
+app.use((req, res, next) => {
+    console.log("Middleware 3");
+    next();
+});
+
 app.get("/", (req, res) => {
     res.end("Home Route");
 });

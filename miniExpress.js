@@ -3,17 +3,32 @@ function miniExpress() {
     const routes = [];
 
     function app(req, res) {
-        const route = routes.find((r) => {
-            return r.method === req.method && r.path === req.url;
-        });
 
-        if (route) {
-            route.handler(req, res);
+        let index = 0;
+
+        function next() {
+            if (index < middleswares.length) {
+                const middleware = middlewares[index];
+                index++;
+
+                middleware(req, res, next);
+            }
+            else {
+                const route = routes.find((r) => {
+                    return r.method === req.method && r.path === req.url;
+                });
+
+                if (route) {
+                    route.handler(req, res);
+                }
+                else {
+                    res.statusCode = 404;
+                    res.end("Not Found");
+                }
+            }
         }
-        else {
-            res.statusCode = 404;
-            return res.end("404 NOT FOUND.")
-        }
+
+        next();
     }
 
     app.use = function (fn) {
