@@ -2,12 +2,39 @@ function miniExpress() {
     const middlewares = [];
     const routes = [];
 
-    function app(req, res) {
+    async function app(req, res) {
+
+        const url = new URL(req.url, "http://localhost");
+
+        req.query = {};
+
+        for (const [key, value] of url.searchParams) {
+            req.query[key] = value;
+        }
+
+        const body = await new Promise((resolve) => {
+            let data = "";
+
+            req.on("data", (chunk) => {
+                data += chunk;
+            });
+
+            req.on("end", () => {
+                resolve(data);
+            });
+        });
+
+        try {
+            req.body = body ? JSON.parse(body) : {};
+        }
+        catch {
+            req.body = {};
+        }
 
         let index = 0;
 
         function next() {
-            if (index < middleswares.length) {
+            if (index < middlewares.length) {
                 const middleware = middlewares[index];
                 index++;
 
@@ -15,7 +42,7 @@ function miniExpress() {
             }
             else {
                 const route = routes.find((r) => {
-                    return r.method === req.method && r.path === req.url;
+                    return r.method === req.method && r.path === url.pathname;
                 });
 
                 if (route) {
@@ -41,9 +68,17 @@ function miniExpress() {
             path,
             handler
         });
-    }
+    };
+
+    app.post = function (path, handler) {
+        routes.push({
+            method: "POST",
+            path,
+            handler
+        });
+    };
 
     return app;
-};
+}
 
 module.exports = miniExpress;

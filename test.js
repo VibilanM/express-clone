@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/users", (req, res) => {
-    res.end("Users Route");
+    res.end(`User ID: ${req.query.id}`);
 });
 
 const server = http.createServer(app);
